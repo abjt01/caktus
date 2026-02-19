@@ -1,0 +1,128 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Project Caktus — docker-compose.yml
+# All services run on the laptop. Only caktus-caddy exposes host ports.
+# Every other container is internal — reachable only through Caddy routing.
+#
+# Network: caktus-net (bridge, 172.20.0.0/16)
+# Add new apps: bash scripts/add-app.sh <name> <port> <image:tag>
+# ─────────────────────────────────────────────────────────────────────────────
+
+networks:
+  caktus-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+services:
+
+  # ── DuckDNS IP Updater ────────────────────────────────────────────────────
+  # Keeps caktus.duckdns.org pointed at the VPS IP.
+  # Polls DuckDNS API every 5 minutes. Handles ISP IP changes transparently.
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: caktus-duckdns
+    environment:
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAIN}
+      - TOKEN=${DUCKDNS_TOKEN}
+      - UPDATE_IP=ipv4
+      - LOG_FILE=false
+      - PUID=1000
+      - PGID=1000
+    networks:
+      - caktus-net
+    restart: unless-stopped
+
+  # ── Caddy Reverse Proxy ───────────────────────────────────────────────────
+  # The only service that binds host ports (80, 443).
+  # Routes traffic to containers by Host header.
+  # TLS is handled upstream on the VPS — this runs in plain HTTP mode.
+  caddy:
+    image: caddy:alpine
+    container_name: caktus-caddy
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - caktus-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── Portainer CE (Docker management UI) ──────────────────────────────────
+  # Web UI for managing containers, images, volumes.
+  # URL: https://portainer.caktus.duckdns.org
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: caktus-portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - caktus-net
+    restart: unless-stopped
+
+  # ── Uptime Kuma (monitoring + status page) ────────────────────────────────
+  # Self-hosted monitoring. Tracks uptime of all your services.
+  # Shows pretty status page. Sends alerts (Telegram, email, etc.)
+  # URL: https://status.caktus.duckdns.org
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: caktus-uptime
+    volumes:
+      - uptime_data:/app/data
+    networks:
+      - caktus-net
+    restart: unless-stopped
+
+  # ── Landing Page ──────────────────────────────────────────────────────────
+  # Professional project showcase page at the root domain.
+  # URL: https://caktus.duckdns.org
+  landing:
+    image: nginx:alpine
+    container_name: caktus-landing
+    volumes:
+      - ./apps/landing:/usr/share/nginx/html:ro
+    networks:
+      - caktus-net
+    restart: unless-stopped
+
+  # ── Hello World (smoke test) ──────────────────────────────────────────────
+  # Quick test app. If this loads, the entire pipeline is working.
+  # URL: https://hello.caktus.duckdns.org
+  hello:
+    image: nginxdemos/hello
+    container_name: caktus-hello
+    networks:
+      - caktus-net
+    restart: unless-stopped
+
+  # ── ADD YOUR APPS BELOW THIS LINE ─────────────────────────────────────────
+  # Automated: bash scripts/add-app.sh <name> <port> <image:tag>
+  # Manual pattern:
+  #
+  # myapp:
+  #   image: your-image:tag
+  #   container_name: caktus-myapp
+  #   environment:
+  #     - PORT=3000
+  #   volumes:
+  #     - ./apps/myapp:/data      # optional: bind-mount for persistence
+  #   networks:
+  #     - caktus-net
+  #   restart: unless-stopped
+
+volumes:
+  caddy_data:       # Caddy state (not needed on laptop — TLS is on VPS)
+  caddy_config:     # Caddy config cache
+  portainer_data:   # Portainer database
+  uptime_data:      # Uptime Kuma monitor configs + history
