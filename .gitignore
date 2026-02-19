@@ -1,0 +1,22 @@
+# ─── Secrets ───────────────────────────────────────────────
+.env
+
+# ─── WireGuard private keys (never commit) ─────────────────
+*.key
+wg0.conf
+
+# ─── OS & editor junk ──────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ─── Caddy data (auto-generated TLS certs, cache) ──────────
+caddy/data/
+
+# ─── App-specific ignores ──────────────────────────────────
+apps/**/node_modules/
+apps/**/__pycache__/
+apps/**/*.pyc
+apps/**/.env
