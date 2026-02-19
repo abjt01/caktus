@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌵 Caktus — Personal Server</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --border:   #30363d;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --green:    #3fb950;
+      --blue:     #58a6ff;
+      --orange:   #d29922;
+      --red:      #f85149;
+      --purple:   #bc8cff;
+      --cactus:   #2ea043;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Nav ── */
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+      position: sticky;
+      top: 0;
+      background: rgba(13,17,23,0.92);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+    }
+    nav .inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .logo {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--green);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .nav-links { display: flex; gap: 24px; list-style: none; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+    .cactus-icon { font-size: 4rem; display: block; margin-bottom: 16px; }
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero .tagline {
+      font-size: 1.2rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .badge-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .badge.green { border-color: var(--green); color: var(--green); }
+    .badge.blue  { border-color: var(--blue);  color: var(--blue);  }
+
+    /* ── Services Grid ── */
+    section { padding: 48px 0; border-top: 1px solid var(--border); }
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .section-sub {
+      color: var(--muted);
+      margin-bottom: 28px;
+      font-size: 0.95rem;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .service-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.2s, transform 0.15s;
+      display: block;
+    }
+    .service-card:hover {
+      border-color: var(--blue);
+      transform: translateY(-2px);
+    }
+    .service-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .service-icon { font-size: 1.5rem; }
+    .service-name { font-weight: 600; font-size: 1rem; }
+    .service-desc { color: var(--muted); font-size: 0.875rem; }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      margin-left: auto;
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .service-url {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: var(--blue);
+      margin-top: 8px;
+    }
+
+    /* ── Architecture ── */
+    .arch-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .arch-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--blue);
+    }
+    pre {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.8rem;
+      color: var(--green);
+      overflow-x: auto;
+      white-space: pre;
+      line-height: 1.5;
+    }
+
+    /* ── Stack Table ── */
+    .stack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .stack-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .stack-tech { font-weight: 600; margin-bottom: 4px; color: var(--purple); }
+    .stack-role { color: var(--muted); font-size: 0.85rem; }
+
+    /* ── Flow Steps ── */
+    .flow-steps { display: flex; flex-direction: column; gap: 10px; }
+    .flow-step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+    .step-num {
+      background: var(--cactus);
+      color: #fff;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-content { flex: 1; }
+    .step-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 3px; }
+    .step-detail { color: var(--muted); font-size: 0.85rem; font-family: 'SF Mono', monospace; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 2rem; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="inner">
+      <a href="#" class="logo">🌵 caktus</a>
+      <ul class="nav-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#stack">Stack</a></li>
+        <li><a href="#how">How It Works</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- ── Hero ── -->
+    <section class="hero" style="border:none; padding-top:72px;">
+      <span class="cactus-icon">🌵</span>
+      <h1>Project Caktus</h1>
+      <p class="tagline">
+        One old laptop. One free VPS. Publicly accessible from anywhere on earth —
+        zero cost, zero vendor lock-in, fully self-hosted.
+      </p>
+      <div class="badge-row">
+        <span class="badge green">● Live</span>
+        <span class="badge blue">Self-Hosted</span>
+        <span class="badge">Docker</span>
+        <span class="badge">WireGuard</span>
+        <span class="badge">Caddy</span>
+        <span class="badge">Oracle Cloud Free</span>
+        <span class="badge">$0/month</span>
+      </div>
+    </section>
+
+    <!-- ── Services ── -->
+    <section id="services">
+      <h2 class="section-title">Running Services</h2>
+      <p class="section-sub">All running on a laptop behind home NAT — reachable from anywhere.</p>
+      <div class="services-grid">
+
+        <a href="https://status.caktus.duckdns.org" class="service-card" target="_blank">
+          <div class="service-header">
+            <span class="service-icon">📊</span>
+            <span class="service-name">Uptime Kuma</span>
+            <span class="status-dot"></span>
+          </div>
+          <p class="service-desc">Self-hosted monitoring &amp; status page. Tracks uptime of all services.</p>
+          <p class="service-url">status.caktus.duckdns.org</p>
+        </a>
+
+        <a href="https://portainer.caktus.duckdns.org" class="service-card" target="_blank">
+          <div class="service-header">
+            <span class="service-icon">🐳</span>
+            <span class="service-name">Portainer</span>
+            <span class="status-dot"></span>
+          </div>
+          <p class="service-desc">Docker management UI. View containers, logs, images in the browser.</p>
+          <p class="service-url">portainer.caktus.duckdns.org</p>
+        </a>
+
+        <a href="https://hello.caktus.duckdns.org" class="service-card" target="_blank">
+          <div class="service-header">
+            <span class="service-icon">👋</span>
+            <span class="service-name">Hello World</span>
+            <span class="status-dot"></span>
+          </div>
+          <p class="service-desc">Smoke test app. If this loads, the entire VPN+Caddy pipeline is healthy.</p>
+          <p class="service-url">hello.caktus.duckdns.org</p>
+        </a>
+
+        <div class="service-card" style="border-style:dashed; cursor:default;">
+          <div class="service-header">
+            <span class="service-icon">➕</span>
+            <span class="service-name">Your App Here</span>
+          </div>
+          <p class="service-desc">Deploy any Docker image in &lt; 2 minutes. One command. Instant subdomain.</p>
+          <p class="service-url" style="color:var(--muted);">bash scripts/add-app.sh</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Architecture ── -->
+    <section id="architecture">
+      <h2 class="section-title">Architecture</h2>
+      <p class="section-sub">VPS as a transparent pipe. All compute lives on the laptop.</p>
+      <div class="arch-block">
+        <p class="arch-title">// network topology</p>
+<pre>
+ USER (any device, any network)
+   │  https://app.caktus.duckdns.org
+   ▼
+ [DNS] caktus.duckdns.org ──▶ VPS public IP
+   │
+   ▼
+ ┌──────────────────────────────────────┐
+ │  ORACLE VPS (Always Free)           │
+ │  Caddy: TLS terminate               │
+ │  WireGuard server: 10.0.0.1         │
+ │  ↓ forwards to 10.0.0.2:80          │
+ └──────────────┬───────────────────────┘
+                │  WireGuard tunnel (encrypted UDP 51820)
+                │  PersistentKeepalive = 25s
+                ▼
+ ┌──────────────────────────────────────────────────┐
+ │  LAPTOP (Ubuntu 22.04)  VPN IP: 10.0.0.2        │
+ │                                                   │
+ │  Docker network: caktus-net (172.20.0.0/16)      │
+ │                                                   │
+ │  Caddy :80  ──▶  caktus-portainer:9000           │
+ │               ──▶  caktus-uptime:3001             │
+ │               ──▶  caktus-landing:80              │
+ │               ──▶  caktus-hello:80                │
+ │               ──▶  caktus-myapp:3000 (your apps) │
+ └──────────────────────────────────────────────────┘
+</pre>
+      </div>
+    </section>
+
+    <!-- ── Stack ── -->
+    <section id="stack">
+      <h2 class="section-title">Technology Stack</h2>
+      <p class="section-sub">Every tool is free, open-source, and production-grade.</p>
+      <div class="stack-grid">
+        <div class="stack-item">
+          <div class="stack-tech">WireGuard</div>
+          <div class="stack-role">VPN tunnel. Punches through NAT. Curve25519 + ChaCha20.</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-tech">Caddy v2</div>
+          <div class="stack-role">Reverse proxy. Auto TLS. Wildcard cert via DNS-01.</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-tech">Docker + Compose</div>
+          <div class="stack-role">Container orchestration. Isolated bridge network.</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-tech">Oracle Cloud Free</div>
+          <div class="stack-role">Always-Free VPS. Stable public IP. Relay only.</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-tech">DuckDNS</div>
+          <div class="stack-role">Free wildcard domain. *.caktus.duckdns.org</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-tech">Let's Encrypt</div>
+          <div class="stack-role">Free TLS certificates. Auto-renewing. ACME DNS-01.</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-tech">Uptime Kuma</div>
+          <div class="stack-role">Self-hosted monitoring. Status page. Alerts.</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-tech">Ubuntu 22.04</div>
+          <div class="stack-role">Server OS. UFW firewall. fail2ban. Netplan.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── How It Works ── -->
+    <section id="how">
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-sub">Every HTTPS request makes this 12-step journey.</p>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <div class="step-title">DNS Lookup</div>
+            <div class="step-detail">Browser resolves caktus.duckdns.org → VPS public IP via DuckDNS</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <div class="step-title">TCP to VPS:443</div>
+            <div class="step-detail">TCP handshake to Oracle VPS on port 443</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <div class="step-title">TLS Handshake (VPS Caddy)</div>
+            <div class="step-detail">Caddy presents wildcard cert *.caktus.duckdns.org — issued by Let's Encrypt via DNS-01</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="step-num">4</span>
+          <div class="step-content">
+            <div class="step-title">VPS Caddy forwards to 10.0.0.2:80</div>
+            <div class="step-detail">Decrypted HTTP with Host header preserved → WireGuard tunnel IP</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="step-num">5</span>
+          <div class="step-content">
+            <div class="step-title">WireGuard Encrypts + Tunnels</div>
+            <div class="step-detail">Packet re-encrypted by ChaCha20-Poly1305, sent as UDP to laptop:51820</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="step-num">6</span>
+          <div class="step-content">
+            <div class="step-title">Laptop WireGuard Decrypts</div>
+            <div class="step-detail">wg0 interface receives, decrypts, delivers to 10.0.0.2 on laptop</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="step-num">7</span>
+          <div class="step-content">
+            <div class="step-title">Laptop Caddy Routes by Host</div>
+            <div class="step-detail">Reads Host header, matches @named-matcher → selects container</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="step-num">8</span>
+          <div class="step-content">
+            <div class="step-title">Docker DNS Resolves Container</div>
+            <div class="step-detail">caktus-net bridge resolves container name → container IP (172.20.x.x)</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="step-num">9</span>
+          <div class="step-content">
+            <div class="step-title">App Processes Request</div>
+            <div class="step-detail">Your container handles the request, builds response</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="step-num">10</span>
+          <div class="step-content">
+            <div class="step-title">Response Travels Back</div>
+            <div class="step-detail">Container → Laptop Caddy → WireGuard → VPS Caddy → TLS encrypt → Browser</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>🌵 Project Caktus &nbsp;·&nbsp; One Laptop. One Server. Fully Free. Fully Mine.</p>
+    <p style="margin-top:8px;">
+      Built with WireGuard · Caddy · Docker · Oracle Cloud Free · DuckDNS
+    </p>
+  </footer>
+
+</body>
+</html>
