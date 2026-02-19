@@ -20,3 +20,7 @@ apps/**/node_modules/
 apps/**/__pycache__/
 apps/**/*.pyc
 apps/**/.env
+# -----
+
+venv/
+venv
