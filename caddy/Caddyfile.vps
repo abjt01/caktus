@@ -1,0 +1,34 @@
+# ─────────────────────────────────────────────────────────────────────
+# VPS Caddyfile — /etc/caddy/Caddyfile (on Oracle VPS)
+#
+# This Caddy instance runs on the VPS (NOT in Docker — installed on host).
+# It terminates TLS using a wildcard cert from Let's Encrypt (DNS-01).
+# All traffic is forwarded to the laptop at 10.0.0.2 via WireGuard tunnel.
+#
+# REQUIREMENTS:
+#   - Caddy must be built with the DuckDNS DNS plugin (xcaddy)
+#   - Replace YOUR_DUCKDNS_TOKEN with your actual token
+#   - Replace your@email.com with your real email (for cert notifications)
+# ─────────────────────────────────────────────────────────────────────
+
+{
+    email your@email.com
+}
+
+# Wildcard TLS cert covers caktus.duckdns.org and all *.caktus.duckdns.org
+*.caktus.duckdns.org, caktus.duckdns.org {
+
+    tls {
+        # DNS-01 challenge — required for wildcard certs
+        dns duckdns YOUR_DUCKDNS_TOKEN
+    }
+
+    # Forward all traffic to laptop via WireGuard tunnel (10.0.0.2)
+    reverse_proxy 10.0.0.2:80 {
+        # Preserve original Host header so laptop Caddy can route correctly
+        header_up Host {host}
+        header_up X-Forwarded-For {remote}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
