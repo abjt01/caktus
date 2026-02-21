@@ -277,16 +277,15 @@
       <span class="cactus-icon">🌵</span>
       <h1>Project Caktus</h1>
       <p class="tagline">
-        One old laptop. One free VPS. Publicly accessible from anywhere on earth —
-        zero cost, zero vendor lock-in, fully self-hosted.
+        One old laptop. Zero cost. Publicly accessible from anywhere on earth —
+        no VPS, no domain, fully self-hosted.
       </p>
       <div class="badge-row">
         <span class="badge green">● Live</span>
         <span class="badge blue">Self-Hosted</span>
         <span class="badge">Docker</span>
-        <span class="badge">WireGuard</span>
+        <span class="badge">ngrok</span>
         <span class="badge">Caddy</span>
-        <span class="badge">Oracle Cloud Free</span>
         <span class="badge">$0/month</span>
       </div>
     </section>
@@ -294,37 +293,37 @@
     <!-- ── Services ── -->
     <section id="services">
       <h2 class="section-title">Running Services</h2>
-      <p class="section-sub">All running on a laptop behind home NAT — reachable from anywhere.</p>
+      <p class="section-sub">All running on a laptop behind CG-NAT — tunneled to the internet via ngrok.</p>
       <div class="services-grid">
 
-        <a href="https://status.caktus.duckdns.org" class="service-card" target="_blank">
+        <a href="#" class="service-card">
           <div class="service-header">
             <span class="service-icon">📊</span>
             <span class="service-name">Uptime Kuma</span>
             <span class="status-dot"></span>
           </div>
           <p class="service-desc">Self-hosted monitoring &amp; status page. Tracks uptime of all services.</p>
-          <p class="service-url">status.caktus.duckdns.org</p>
+          <p class="service-url">status.caktus.local</p>
         </a>
 
-        <a href="https://portainer.caktus.duckdns.org" class="service-card" target="_blank">
+        <a href="#" class="service-card">
           <div class="service-header">
             <span class="service-icon">🐳</span>
             <span class="service-name">Portainer</span>
             <span class="status-dot"></span>
           </div>
           <p class="service-desc">Docker management UI. View containers, logs, images in the browser.</p>
-          <p class="service-url">portainer.caktus.duckdns.org</p>
+          <p class="service-url">portainer.caktus.local</p>
         </a>
 
-        <a href="https://hello.caktus.duckdns.org" class="service-card" target="_blank">
+        <a href="#" class="service-card">
           <div class="service-header">
             <span class="service-icon">👋</span>
             <span class="service-name">Hello World</span>
             <span class="status-dot"></span>
           </div>
-          <p class="service-desc">Smoke test app. If this loads, the entire VPN+Caddy pipeline is healthy.</p>
-          <p class="service-url">hello.caktus.duckdns.org</p>
+          <p class="service-desc">Smoke test app. If this loads, the entire pipeline is healthy.</p>
+          <p class="service-url">hello.caktus.local</p>
         </a>
 
         <div class="service-card" style="border-style:dashed; cursor:default;">
@@ -332,7 +331,7 @@
             <span class="service-icon">➕</span>
             <span class="service-name">Your App Here</span>
           </div>
-          <p class="service-desc">Deploy any Docker image in &lt; 2 minutes. One command. Instant subdomain.</p>
+          <p class="service-desc">Deploy any Docker image in &lt; 2 minutes. One command.</p>
           <p class="service-url" style="color:var(--muted);">bash scripts/add-app.sh</p>
         </div>
 
@@ -342,35 +341,29 @@
     <!-- ── Architecture ── -->
     <section id="architecture">
       <h2 class="section-title">Architecture</h2>
-      <p class="section-sub">VPS as a transparent pipe. All compute lives on the laptop.</p>
+      <p class="section-sub">ngrok tunnels traffic from the internet directly to your laptop. Zero inbound ports.</p>
       <div class="arch-block">
         <p class="arch-title">// network topology</p>
 <pre>
  USER (any device, any network)
-   │  https://app.caktus.duckdns.org
+   │  https://your-app.ngrok-free.app
    ▼
- [DNS] caktus.duckdns.org ──▶ VPS public IP
+ [ngrok Edge] ── Cloudflare-grade TLS termination
    │
-   ▼
- ┌──────────────────────────────────────┐
- │  ORACLE VPS (Always Free)           │
- │  Caddy: TLS terminate               │
- │  WireGuard server: 10.0.0.1         │
- │  ↓ forwards to 10.0.0.2:80          │
- └──────────────┬───────────────────────┘
-                │  WireGuard tunnel (encrypted UDP 51820)
-                │  PersistentKeepalive = 25s
-                ▼
+   ▼  (outbound tunnel from laptop — no inbound ports needed)
  ┌──────────────────────────────────────────────────┐
- │  LAPTOP (Ubuntu 22.04)  VPN IP: 10.0.0.2        │
+ │  LAPTOP (your machine)                           │
+ │                                                   │
+ │  caktus-ngrok  ──▶  caktus-caddy :80             │
+ │                                                   │
+ │  Caddy routes by Host header:                    │
+ │    ──▶  caktus-landing:80    (landing page)      │
+ │    ──▶  caktus-hello:80      (smoke test)        │
+ │    ──▶  caktus-portainer:9000 (Docker UI)        │
+ │    ──▶  caktus-uptime:3001   (monitoring)        │
+ │    ──▶  caktus-yourapp:PORT  (your apps)         │
  │                                                   │
  │  Docker network: caktus-net (172.20.0.0/16)      │
- │                                                   │
- │  Caddy :80  ──▶  caktus-portainer:9000           │
- │               ──▶  caktus-uptime:3001             │
- │               ──▶  caktus-landing:80              │
- │               ──▶  caktus-hello:80                │
- │               ──▶  caktus-myapp:3000 (your apps) │
  └──────────────────────────────────────────────────┘
 </pre>
       </div>
@@ -382,36 +375,28 @@
       <p class="section-sub">Every tool is free, open-source, and production-grade.</p>
       <div class="stack-grid">
         <div class="stack-item">
-          <div class="stack-tech">WireGuard</div>
-          <div class="stack-role">VPN tunnel. Punches through NAT. Curve25519 + ChaCha20.</div>
+          <div class="stack-tech">ngrok</div>
+          <div class="stack-role">Secure tunnel. Bypasses CG-NAT. Free HTTPS endpoint.</div>
         </div>
         <div class="stack-item">
           <div class="stack-tech">Caddy v2</div>
-          <div class="stack-role">Reverse proxy. Auto TLS. Wildcard cert via DNS-01.</div>
+          <div class="stack-role">Reverse proxy. Routes by Host header. Zero config.</div>
         </div>
         <div class="stack-item">
           <div class="stack-tech">Docker + Compose</div>
           <div class="stack-role">Container orchestration. Isolated bridge network.</div>
         </div>
         <div class="stack-item">
-          <div class="stack-tech">Oracle Cloud Free</div>
-          <div class="stack-role">Always-Free VPS. Stable public IP. Relay only.</div>
-        </div>
-        <div class="stack-item">
-          <div class="stack-tech">DuckDNS</div>
-          <div class="stack-role">Free wildcard domain. *.caktus.duckdns.org</div>
-        </div>
-        <div class="stack-item">
-          <div class="stack-tech">Let's Encrypt</div>
-          <div class="stack-role">Free TLS certificates. Auto-renewing. ACME DNS-01.</div>
-        </div>
-        <div class="stack-item">
           <div class="stack-tech">Uptime Kuma</div>
           <div class="stack-role">Self-hosted monitoring. Status page. Alerts.</div>
         </div>
         <div class="stack-item">
-          <div class="stack-tech">Ubuntu 22.04</div>
-          <div class="stack-role">Server OS. UFW firewall. fail2ban. Netplan.</div>
+          <div class="stack-tech">Portainer</div>
+          <div class="stack-role">Docker management UI. Containers, logs, images.</div>
+        </div>
+        <div class="stack-item">
+          <div class="stack-tech">Ubuntu / Linux</div>
+          <div class="stack-role">Server OS. Any old laptop works.</div>
         </div>
       </div>
     </section>
@@ -419,76 +404,41 @@
     <!-- ── How It Works ── -->
     <section id="how">
       <h2 class="section-title">How It Works</h2>
-      <p class="section-sub">Every HTTPS request makes this 12-step journey.</p>
+      <p class="section-sub">Every HTTPS request makes this journey.</p>
       <div class="flow-steps">
         <div class="flow-step">
           <span class="step-num">1</span>
           <div class="step-content">
-            <div class="step-title">DNS Lookup</div>
-            <div class="step-detail">Browser resolves caktus.duckdns.org → VPS public IP via DuckDNS</div>
+            <div class="step-title">User visits your ngrok URL</div>
+            <div class="step-detail">https://your-app.ngrok-free.app → ngrok edge servers</div>
           </div>
         </div>
         <div class="flow-step">
           <span class="step-num">2</span>
           <div class="step-content">
-            <div class="step-title">TCP to VPS:443</div>
-            <div class="step-detail">TCP handshake to Oracle VPS on port 443</div>
+            <div class="step-title">ngrok terminates TLS</div>
+            <div class="step-detail">HTTPS decrypted at ngrok edge. Request forwarded through persistent tunnel.</div>
           </div>
         </div>
         <div class="flow-step">
           <span class="step-num">3</span>
           <div class="step-content">
-            <div class="step-title">TLS Handshake (VPS Caddy)</div>
-            <div class="step-detail">Caddy presents wildcard cert *.caktus.duckdns.org — issued by Let's Encrypt via DNS-01</div>
+            <div class="step-title">Tunnel delivers to Caddy</div>
+            <div class="step-detail">caktus-ngrok container → caktus-caddy:80 (internal Docker network)</div>
           </div>
         </div>
         <div class="flow-step">
           <span class="step-num">4</span>
           <div class="step-content">
-            <div class="step-title">VPS Caddy forwards to 10.0.0.2:80</div>
-            <div class="step-detail">Decrypted HTTP with Host header preserved → WireGuard tunnel IP</div>
+            <div class="step-title">Caddy routes by Host header</div>
+            <div class="step-detail">Reads Host header → matches @named-matcher → selects target container</div>
           </div>
         </div>
         <div class="flow-step">
           <span class="step-num">5</span>
           <div class="step-content">
-            <div class="step-title">WireGuard Encrypts + Tunnels</div>
-            <div class="step-detail">Packet re-encrypted by ChaCha20-Poly1305, sent as UDP to laptop:51820</div>
-          </div>
-        </div>
-        <div class="flow-step">
-          <span class="step-num">6</span>
-          <div class="step-content">
-            <div class="step-title">Laptop WireGuard Decrypts</div>
-            <div class="step-detail">wg0 interface receives, decrypts, delivers to 10.0.0.2 on laptop</div>
-          </div>
-        </div>
-        <div class="flow-step">
-          <span class="step-num">7</span>
-          <div class="step-content">
-            <div class="step-title">Laptop Caddy Routes by Host</div>
-            <div class="step-detail">Reads Host header, matches @named-matcher → selects container</div>
-          </div>
-        </div>
-        <div class="flow-step">
-          <span class="step-num">8</span>
-          <div class="step-content">
-            <div class="step-title">Docker DNS Resolves Container</div>
-            <div class="step-detail">caktus-net bridge resolves container name → container IP (172.20.x.x)</div>
-          </div>
-        </div>
-        <div class="flow-step">
-          <span class="step-num">9</span>
-          <div class="step-content">
-            <div class="step-title">App Processes Request</div>
-            <div class="step-detail">Your container handles the request, builds response</div>
-          </div>
-        </div>
-        <div class="flow-step">
-          <span class="step-num">10</span>
-          <div class="step-content">
-            <div class="step-title">Response Travels Back</div>
-            <div class="step-detail">Container → Laptop Caddy → WireGuard → VPS Caddy → TLS encrypt → Browser</div>
+            <div class="step-title">Container responds</div>
+            <div class="step-detail">Your app processes the request. Response flows back: container → Caddy → ngrok → user</div>
           </div>
         </div>
       </div>
@@ -497,9 +447,9 @@
   </div>
 
   <footer>
-    <p>🌵 Project Caktus &nbsp;·&nbsp; One Laptop. One Server. Fully Free. Fully Mine.</p>
+    <p>🌵 Project Caktus &nbsp;·&nbsp; One Laptop. Zero Cost. Fully Mine.</p>
     <p style="margin-top:8px;">
-      Built with WireGuard · Caddy · Docker · Oracle Cloud Free · DuckDNS
+      Built with ngrok · Caddy · Docker · Uptime Kuma · Portainer
     </p>
   </footer>
 
