@@ -19,7 +19,7 @@ CYAN='\033[0;36m'
 MUTED='\033[0;90m'
 NC='\033[0m'
 
-SERVICES="caddy duckdns portainer uptime-kuma landing hello"
+SERVICES="caddy ngrok portainer uptime-kuma landing hello"
 
 usage() {
     echo ""
@@ -83,7 +83,7 @@ case "$1" in
         ;;
 
     # Specific service
-    caddy|portainer|duckdns|uptime-kuma|uptime|hello|landing)
+    caddy|portainer|ngrok|uptime-kuma|uptime|hello|landing)
         SVC="$1"
         [ "$SVC" = "uptime" ] && SVC="uptime-kuma"
         print_header

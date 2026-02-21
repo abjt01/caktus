@@ -1,8 +1,8 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────────
-# add-app.sh — Automates adding a new app to Caktus (2 steps in 1)
+# add-app.sh — Automates adding a new app to Caktus
 #
-# Usage: bash ~/caktus/scripts/add-app.sh <appname> <port> <image:tag>
+# Usage: bash scripts/add-app.sh <appname> <port> <image:tag>
 #
 # Examples:
 #   bash scripts/add-app.sh notes 3000 nickel-notes:latest
@@ -11,10 +11,10 @@
 # ─────────────────────────────────────────────────────────────────────
 set -e
 
-CAKTUS_DIR="$HOME/caktus"
+# Resolve project root relative to this script
+CAKTUS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 COMPOSE_FILE="$CAKTUS_DIR/docker-compose.yml"
 CADDY_FILE="$CAKTUS_DIR/caddy/Caddyfile"
-DOMAIN="caktus.duckdns.org"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -59,13 +59,12 @@ echo "════════════════════════�
 echo "  Name:   $APP_NAME"
 echo "  Port:   $APP_PORT"
 echo "  Image:  $APP_IMAGE"
-echo "  URL:    https://${APP_NAME}.${DOMAIN}"
+echo "  Local:  http://${APP_NAME}.caktus.local"
 echo ""
 
 # ─── Step 1: Append to docker-compose.yml ────────────────────────────
 info "Step 1/3: Adding service to docker-compose.yml..."
 
-# Insert before the closing 'volumes:' section
 COMPOSE_ENTRY="
   # ── ${APP_NAME} ───────────────────────────────────────────────────────────
   ${APP_NAME}:
@@ -105,7 +104,7 @@ info "Step 2/3: Adding route to Caddyfile..."
 
 CADDY_ENTRY="
     # ── ${APP_NAME} ───────────────────────────────────────────────────────────
-    @${APP_NAME} host ${APP_NAME}.${DOMAIN}
+    @${APP_NAME} host ${APP_NAME}.caktus.local
     handle @${APP_NAME} {
         reverse_proxy caktus-${APP_NAME}:${APP_PORT}
     }"
@@ -142,20 +141,17 @@ cd "$CAKTUS_DIR"
 docker compose up -d "$APP_NAME"
 sleep 2
 
-# Reload Caddy config (zero downtime)
-if docker inspect caktus-caddy --format='{{.State.Status}}' 2>/dev/null | grep -q running; then
-    docker exec caktus-caddy caddy reload --config /etc/caddy/Caddyfile
-    log "Caddy config reloaded"
-else
-    warn "Caddy is not running — start it with: docker compose up -d"
-fi
+# Restart Caddy to pick up new config (admin API is off)
+docker compose restart caddy
+log "Caddy restarted with new routes"
 
 # ─── Done ────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"
 log "App '${APP_NAME}' is live!"
 echo ""
-echo -e "  ${BOLD}URL:${NC} ${CYAN}https://${APP_NAME}.${DOMAIN}${NC}"
+echo -e "  ${BOLD}Local:${NC} http://${APP_NAME}.caktus.local"
+echo -e "  ${BOLD}Tip:${NC}   Add to /etc/hosts: 127.0.0.1 ${APP_NAME}.caktus.local"
 echo ""
 echo "  Useful commands:"
 echo "  • Logs:    docker compose logs -f ${APP_NAME}"
