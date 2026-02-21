@@ -11,22 +11,16 @@
 # ─────────────────────────────────────────────────────────────────────
 set -e
 
-# Resolve project root relative to this script
-CAKTUS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+
+resolve_env_file "$@"
+strip_env_file_args ARGS "$@"
+set -- "${ARGS[@]+"${ARGS[@]}"}"
+
 COMPOSE_FILE="$CAKTUS_DIR/docker-compose.yml"
 CADDY_FILE="$CAKTUS_DIR/caddy/Caddyfile"
-
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BOLD='\033[1m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
-log()  { echo -e "${GREEN}[✓]${NC} $1"; }
-warn() { echo -e "${YELLOW}[!]${NC} $1"; }
-fail() { echo -e "${RED}[✗]${NC} $1"; exit 1; }
-info() { echo -e "${BOLD}[→]${NC} $1"; }
 
 # ─── Validate inputs ─────────────────────────────────────────────────
 APP_NAME="$1"
@@ -136,13 +130,12 @@ log "Route added to Caddyfile"
 
 # ─── Step 3: Apply ───────────────────────────────────────────────────
 info "Step 3/3: Applying changes..."
-cd "$CAKTUS_DIR"
 
-docker compose up -d "$APP_NAME"
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d "$APP_NAME"
 sleep 2
 
 # Restart Caddy to pick up new config (admin API is off)
-docker compose restart caddy
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart caddy
 log "Caddy restarted with new routes"
 
 # ─── Done ────────────────────────────────────────────────────────────

@@ -9,16 +9,15 @@
 #   bash scripts/logs.sh errors    # show only ERROR lines across all services
 # ─────────────────────────────────────────────────────────────────────────────
 
-CAKTUS_DIR="$HOME/caktus"
-BOLD='\033[1m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-MUTED='\033[0;90m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
 
+resolve_env_file "$@"
+strip_env_file_args ARGS "$@"
+set -- "${ARGS[@]+"${ARGS[@]}"}"
+
+COMPOSE_FILE="$CAKTUS_DIR/docker-compose.yml"
 SERVICES="caddy ngrok portainer uptime-kuma landing hello"
 
 usage() {
@@ -48,7 +47,7 @@ case "$1" in
         print_header
         echo -e "${CYAN}Following all services (Ctrl+C to stop)...${NC}"
         echo ""
-        cd "$CAKTUS_DIR" && docker compose logs -f --tail 10
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs -f --tail 10
         ;;
 
     # Show only errors across all services
@@ -56,8 +55,7 @@ case "$1" in
         print_header
         echo -e "${RED}Errors & Warnings across all services:${NC}"
         echo ""
-        cd "$CAKTUS_DIR" && \
-            docker compose logs --tail 500 2>&1 | \
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail 500 2>&1 | \
             grep -iE 'error|warn|fail|fatal|panic|exception|critical' | \
             grep -v '^#' | \
             head -100 || echo "  No errors found in last 500 lines"
@@ -68,7 +66,7 @@ case "$1" in
         print_header
         echo -e "${BOLD}Container Status:${NC}"
         echo ""
-        cd "$CAKTUS_DIR" && docker compose ps
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps
         echo ""
         echo -e "${BOLD}Resource Usage:${NC}"
         docker stats --no-stream --format \
@@ -89,7 +87,7 @@ case "$1" in
         print_header
         echo -e "${CYAN}Logs for: $SVC${NC}"
         echo ""
-        cd "$CAKTUS_DIR" && docker compose logs --tail 100 -f "$SVC"
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail 100 -f "$SVC"
         ;;
 
     # Default: show recent from all services
@@ -97,7 +95,6 @@ case "$1" in
         print_header
         echo -e "${MUTED}Last 50 lines from each service:${NC}"
 
-        cd "$CAKTUS_DIR"
         for svc in $SERVICES; do
             CONTAINER="caktus-${svc}"
             STATUS=$(docker inspect --format='{{.State.Status}}' "$CONTAINER" 2>/dev/null || echo "not found")
@@ -112,7 +109,7 @@ case "$1" in
 
             echo -e "${BOLD}┌── $svc ${COLOR}[$STATUS]${NC}${BOLD} ──────────────────────────────${NC}"
             if [ "$STATUS" = "running" ]; then
-                docker compose logs --tail 8 "$svc" 2>/dev/null | \
+                docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --tail 8 "$svc" 2>/dev/null | \
                     sed 's/^/│  /' || true
             else
                 echo "│  (not running)"

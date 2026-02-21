@@ -6,18 +6,17 @@
 # Usage: bash scripts/health-check.sh
 # ─────────────────────────────────────────────────────────────────────
 
-CAKTUS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
 
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-BOLD='\033[1m'
-NC='\033[0m'
+resolve_env_file "$@"
 
+# Override fail() — in health-check we count failures rather than exit immediately.
+# This local definition shadows the one from common.sh.
 ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
 fail() { echo -e "  ${RED}✗${NC} $1"; }
 warn() { echo -e "  ${YELLOW}!${NC} $1"; }
-section() { echo ""; echo -e "${BOLD}[$1]${NC}"; }
 
 PASS=0
 FAIL=0
@@ -56,16 +55,16 @@ section "2 / ngrok Tunnel"
 NGROK_STATUS=$(docker inspect --format='{{.State.Status}}' caktus-ngrok 2>/dev/null || echo "missing")
 if [ "$NGROK_STATUS" = "running" ]; then
     # Check ngrok logs for errors
-    NGROK_ERRORS=$(docker logs caktus-ngrok 2>&1 | grep -c "ERR_" || true)
+    NGROK_ERRORS=$(docker logs caktus-ngrok 2>&1 | grep -c "ERR_" || echo "0")
     if [ "$NGROK_ERRORS" -eq 0 ]; then
         check_ok "ngrok tunnel active (no errors)"
     else
         check_warn "ngrok tunnel running but has $NGROK_ERRORS error(s) in logs"
     fi
 
-    # Try to get the public URL from .env
-    if [ -f "$CAKTUS_DIR/.env" ]; then
-        DOMAIN=$(grep "^NGROK_DOMAIN=" "$CAKTUS_DIR/.env" | cut -d= -f2)
+    # Try to get the public URL from env file
+    if [ -f "$ENV_FILE" ]; then
+        DOMAIN=$(grep "^NGROK_DOMAIN=" "$ENV_FILE" | cut -d= -f2)
         if [ -n "$DOMAIN" ]; then
             check_ok "Public URL: https://$DOMAIN"
         fi
@@ -89,8 +88,8 @@ fi
 
 # ─── 4. Public Access ────────────────────────────────────────────────
 section "4 / Public Access"
-if [ -f "$CAKTUS_DIR/.env" ]; then
-    DOMAIN=$(grep "^NGROK_DOMAIN=" "$CAKTUS_DIR/.env" | cut -d= -f2)
+if [ -f "$ENV_FILE" ]; then
+    DOMAIN=$(grep "^NGROK_DOMAIN=" "$ENV_FILE" | cut -d= -f2)
     if [ -n "$DOMAIN" ]; then
         PUB_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "https://$DOMAIN" 2>/dev/null || echo "000")
         if [ "$PUB_CODE" = "200" ]; then
@@ -107,19 +106,15 @@ fi
 
 # ─── 5. Disk Usage ───────────────────────────────────────────────────
 section "5 / Disk"
-df -h / | tail -1 | while read -r fs size used avail pct mp; do
-    PCT_NUM=$(echo "$pct" | sed 's/%//')
-    if [ "$PCT_NUM" -lt 80 ]; then
-        ok "Root filesystem: $used / $size ($pct used)"
-        ((PASS++))
-    elif [ "$PCT_NUM" -lt 90 ]; then
-        warn "Root filesystem: $used / $size ($pct used) — getting full"
-        ((WARN++))
-    else
-        fail "Root filesystem: $used / $size ($pct used) — CRITICALLY FULL"
-        ((FAIL++))
-    fi
-done
+read -r _fs DISK_SIZE DISK_USED DISK_AVAIL DISK_PCT _mp <<< "$(df -h / | tail -1)"
+PCT_NUM="${DISK_PCT//%/}"
+if [ "$PCT_NUM" -lt 80 ]; then
+    check_ok "Root filesystem: $DISK_USED / $DISK_SIZE ($DISK_PCT used)"
+elif [ "$PCT_NUM" -lt 90 ]; then
+    check_warn "Root filesystem: $DISK_USED / $DISK_SIZE ($DISK_PCT used) — getting full"
+else
+    check_fail "Root filesystem: $DISK_USED / $DISK_SIZE ($DISK_PCT used) — CRITICALLY FULL"
+fi
 
 # ─── 6. Memory ───────────────────────────────────────────────────────
 section "6 / Memory"
