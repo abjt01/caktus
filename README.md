@@ -7,7 +7,7 @@ Turn any laptop into a self-hosted server — no VPS, no domain purchase, no por
 ## Architecture
 
 ```
-Internet → ngrok Edge (HTTPS) → caktus-ngrok → caktus-caddy :80 → Docker containers
+Internet → ngrok Edge (HTTPS) → caktus-ngrok → caktus-nginx :80 → Docker containers
 ```
 
 Everything runs on your laptop. ngrok creates an outbound tunnel — no inbound ports needed.
@@ -45,7 +45,7 @@ docker compose up -d
 | **Portainer** | `caktus-portainer` | Docker management UI |
 | **Uptime Kuma** | `caktus-uptime` | Monitoring & status page |
 | **ngrok** | `caktus-ngrok` | Public HTTPS tunnel |
-| **Caddy** | `caktus-caddy` | Reverse proxy, routes by Host header |
+| **nginx** | `caktus-nginx` | Reverse proxy, routes by Host header |
 
 ## Adding Your Own Apps
 
@@ -55,8 +55,8 @@ bash scripts/add-app.sh myapp 3000 myimage:tag
 
 This automatically:
 1. Adds the service to `docker-compose.yml`
-2. Adds a Caddy route to the `Caddyfile`
-3. Starts the container and reloads Caddy
+2. Adds an nginx server block to `nginx/nginx.conf`
+3. Starts the container and reloads nginx
 
 ## Scripts
 
@@ -71,7 +71,7 @@ This automatically:
 ## Stack
 
 - **[ngrok](https://ngrok.com)** — Secure tunnel, bypasses CG-NAT, free HTTPS
-- **[Caddy](https://caddyserver.com)** — Reverse proxy, routes by Host header
+- **[nginx](https://nginx.org)** — Reverse proxy, routes by Host header
 - **[Docker](https://docker.com)** — Container orchestration
 - **[Uptime Kuma](https://github.com/louislam/uptime-kuma)** — Self-hosted monitoring
 - **[Portainer](https://portainer.io)** — Docker management UI
@@ -83,8 +83,8 @@ caktus/
 ├── .env                  # Secrets (never committed)
 ├── .env.example          # Template for .env
 ├── docker-compose.yml    # All service definitions
-├── caddy/
-│   └── Caddyfile         # Reverse proxy routes
+├── nginx/
+│   └── nginx.conf        # Reverse proxy routes
 ├── apps/
 │   └── landing/          # Landing page HTML
 ├── scripts/
