@@ -4,7 +4,7 @@
 #
 # Usage:
 #   bash scripts/logs.sh           # show last 50 lines from all services
-#   bash scripts/logs.sh caddy     # tail logs for caddy only
+#   bash scripts/logs.sh nginx     # tail logs for nginx only
 #   bash scripts/logs.sh -f        # follow all logs (live stream)
 #   bash scripts/logs.sh errors    # show only ERROR lines across all services
 # ─────────────────────────────────────────────────────────────────────────────
@@ -18,14 +18,14 @@ strip_env_file_args ARGS "$@"
 set -- "${ARGS[@]+"${ARGS[@]}"}"
 
 COMPOSE_FILE="$CAKTUS_DIR/docker-compose.yml"
-SERVICES="caddy ngrok portainer uptime-kuma landing hello"
+SERVICES="nginx ngrok portainer uptime-kuma landing hello"
 
 usage() {
     echo ""
     echo "Usage: bash scripts/logs.sh [service|flag]"
     echo ""
     echo "  No args      → last 50 lines from all services"
-    echo "  <service>    → tail that service (caddy, portainer, uptime-kuma, etc.)"
+    echo "  <service>    → tail that service (nginx, portainer, uptime-kuma, etc.)"
     echo "  -f           → follow all services live"
     echo "  errors       → grep ERROR/WARN across all services"
     echo "  status       → show container status summary"
@@ -81,7 +81,7 @@ case "$1" in
         ;;
 
     # Specific service
-    caddy|portainer|ngrok|uptime-kuma|uptime|hello|landing)
+    nginx|portainer|ngrok|uptime-kuma|uptime|hello|landing)
         SVC="$1"
         [ "$SVC" = "uptime" ] && SVC="uptime-kuma"
         print_header

@@ -1,7 +1,7 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────────
 # Caktus Health Check — runs on the laptop
-# Checks: ngrok tunnel, Docker services, Caddy, disk, memory
+# Checks: ngrok tunnel, Docker services, nginx, disk, memory
 #
 # Usage: bash scripts/health-check.sh
 # ─────────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ section "1 / Docker Services"
 if ! command -v docker &>/dev/null; then
     check_fail "Docker not installed"
 else
-    SERVICES=("caktus-caddy" "caktus-ngrok" "caktus-portainer" "caktus-uptime" "caktus-hello" "caktus-landing")
+    SERVICES=("caktus-nginx" "caktus-ngrok" "caktus-portainer" "caktus-uptime" "caktus-hello" "caktus-landing")
     for svc in "${SERVICES[@]}"; do
         STATUS=$(docker inspect --format='{{.State.Status}}' "$svc" 2>/dev/null || echo "missing")
         if [ "$STATUS" = "running" ]; then
@@ -74,16 +74,16 @@ else
     echo "    Fix: docker compose up -d ngrok"
 fi
 
-# ─── 3. Caddy Reachability ───────────────────────────────────────────
-section "3 / Caddy (localhost:80)"
+# ─── 3. nginx Reachability ───────────────────────────────────────────
+section "3 / nginx (localhost:80)"
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://localhost/ 2>/dev/null || echo "000")
 if [ "$HTTP_CODE" = "200" ]; then
-    check_ok "Caddy responding on :80 (HTTP 200)"
+    check_ok "nginx responding on :80 (HTTP 200)"
 elif [ "$HTTP_CODE" != "000" ]; then
-    check_warn "Caddy responded with HTTP $HTTP_CODE"
+    check_warn "nginx responded with HTTP $HTTP_CODE"
 else
-    check_fail "Caddy not responding on :80"
-    echo "    Fix: docker compose restart caddy"
+    check_fail "nginx not responding on :80"
+    echo "    Fix: docker compose restart nginx"
 fi
 
 # ─── 4. Public Access ────────────────────────────────────────────────
