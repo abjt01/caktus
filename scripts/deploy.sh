@@ -9,7 +9,7 @@
 # What it does:
 #   1. Validates env vars (NGROK_AUTHTOKEN, NGROK_DOMAIN)
 #   2. Starts / updates all containers via docker compose up -d
-#   3. Waits for caktus-caddy and caktus-ngrok to be running
+#   3. Waits for caktus-nginx and caktus-ngrok to be running
 #   4. Prints the public URL
 # ─────────────────────────────────────────────────────────────────────
 set -e
@@ -47,30 +47,30 @@ info "Step 2/3: Starting containers..."
 docker compose --env-file "$ENV_FILE" -f "$CAKTUS_DIR/docker-compose.yml" up -d
 log "Containers started"
 
-# ─── Step 3: Wait for caddy + ngrok to be running ────────────────────
-info "Step 3/3: Waiting for caddy and ngrok to be ready..."
+# ─── Step 3: Wait for nginx + ngrok to be running ────────────────────
+info "Step 3/3: Waiting for nginx and ngrok to be ready..."
 TIMEOUT=30
 ELAPSED=0
-CADDY_STATUS="missing"
+NGINX_STATUS="missing"
 NGROK_STATUS="missing"
 
 while [ $ELAPSED -lt $TIMEOUT ]; do
-    CADDY_STATUS=$(docker inspect --format='{{.State.Status}}' caktus-caddy 2>/dev/null || echo "missing")
+    NGINX_STATUS=$(docker inspect --format='{{.State.Status}}' caktus-nginx 2>/dev/null || echo "missing")
     NGROK_STATUS=$(docker inspect --format='{{.State.Status}}' caktus-ngrok 2>/dev/null || echo "missing")
-    if [ "$CADDY_STATUS" = "running" ] && [ "$NGROK_STATUS" = "running" ]; then
+    if [ "$NGINX_STATUS" = "running" ] && [ "$NGROK_STATUS" = "running" ]; then
         break
     fi
     sleep 2
     ELAPSED=$(( ELAPSED + 2 ))
 done
 
-if [ "$CADDY_STATUS" != "running" ]; then
-    warn "caktus-caddy is not running yet (status: $CADDY_STATUS)"
+if [ "$NGINX_STATUS" != "running" ]; then
+    warn "caktus-nginx is not running yet (status: $NGINX_STATUS)"
 fi
 if [ "$NGROK_STATUS" != "running" ]; then
     warn "caktus-ngrok is not running yet (status: $NGROK_STATUS)"
 fi
-if [ "$CADDY_STATUS" = "running" ] && [ "$NGROK_STATUS" = "running" ]; then
+if [ "$NGINX_STATUS" = "running" ] && [ "$NGROK_STATUS" = "running" ]; then
     log "All core services running"
 fi
 

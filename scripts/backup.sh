@@ -10,7 +10,7 @@
 #
 # What it does NOT back up:
 #   - .env (contains secrets — back up manually and securely)
-#   - Caddy TLS certs (auto-reissued by Let's Encrypt if lost)
+#   - nginx TLS certs (TLS is handled by ngrok — nothing to back up)
 #
 # Usage:
 #   bash ~/caktus/scripts/backup.sh              # manual run
