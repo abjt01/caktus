@@ -1,18 +1,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # LAPTOP Caddyfile — ~/caktus/caddy/Caddyfile
 #
-# Routing table (Host header → container):
-#   caktus.duckdns.org              → caktus-landing:80    (project showcase)
-#   hello.caktus.duckdns.org        → caktus-hello:80      (smoke test)
-#   portainer.caktus.duckdns.org    → caktus-portainer:9000 (Docker UI)
-#   status.caktus.duckdns.org       → caktus-uptime:3001   (monitoring)
-#
-# Rules:
-#  - auto_https off  → TLS is handled upstream by VPS Caddy
-#  - admin off       → no Caddy admin API (attack surface reduction)
-#  - All routing in one :80 block
-#  - Named matchers (@name) for each app
-#  - Always: reverse_proxy container-name:internal-port
+# LOCAL MODE: Access services via localhost or LAN IP (192.168.1.5)
+# No domain, no tunnel — just plain local routing by Host header.
+# Add entries to /etc/hosts for subdomain routing on LAN.
 # ─────────────────────────────────────────────────────────────────────────────
 
 {
@@ -22,42 +13,28 @@
 
 :80 {
 
-    # ── Landing page (root domain) ────────────────────────────────────────────
-    @landing host caktus.duckdns.org
+    @landing host caktus.local
     handle @landing {
         reverse_proxy caktus-landing:80
     }
 
-    # ── Hello World (smoke test) ──────────────────────────────────────────────
-    @hello host hello.caktus.duckdns.org
+    @hello host hello.caktus.local
     handle @hello {
         reverse_proxy caktus-hello:80
     }
 
-    # ── Portainer (Docker UI) ─────────────────────────────────────────────────
-    @portainer host portainer.caktus.duckdns.org
+    @portainer host portainer.caktus.local
     handle @portainer {
         reverse_proxy caktus-portainer:9000
     }
 
-    # ── Uptime Kuma (status & monitoring) ────────────────────────────────────
-    # Note: Uptime Kuma requires WebSocket support. Caddy handles this natively.
-    @uptime host status.caktus.duckdns.org
+    @uptime host status.caktus.local
     handle @uptime {
         reverse_proxy caktus-uptime:3001
     }
 
-    # ── YOUR APPS GO HERE ─────────────────────────────────────────────────────
-    # Run: bash scripts/add-app.sh myapp 3000 myimage:tag
-    # It adds the 3-line block below automatically.
-    #
-    # @myapp host myapp.caktus.duckdns.org
-    # handle @myapp {
-    #     reverse_proxy caktus-myapp:3000
-    # }
-
-    # ── Default (unmatched subdomain) ─────────────────────────────────────────
+    # Default — catch-all serves the landing page
     handle {
-        respond "🌵 Caktus — Unknown subdomain. Check your Caddyfile." 404
+        reverse_proxy caktus-landing:80
     }
 }
