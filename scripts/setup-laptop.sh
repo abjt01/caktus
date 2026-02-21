@@ -1,15 +1,14 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────────
-# Phase 0 + 4: Laptop Setup Script
-# Run once on your Ubuntu 22.04 laptop.
-# Sets up: deps, Docker, static IP prompt, UFW firewall,
-#           no-sleep settings, and project structure.
+# Laptop Setup Script — Project Caktus
+# Run once on your Ubuntu laptop.
+# Sets up: Docker, no-sleep, UFW, project structure.
 #
-# Usage: bash ~/caktus/scripts/setup-laptop.sh
+# Usage: bash scripts/setup-laptop.sh
 # ─────────────────────────────────────────────────────────────────────
 set -e
 
-CAKTUS_DIR="$HOME/caktus"
+CAKTUS_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BOLD='\033[1m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -29,7 +28,7 @@ echo ""
 # ─── Step 1: System Update ───────────────────────────────────────────
 info "Step 1: Updating system packages..."
 sudo apt update -qq && sudo apt upgrade -y -qq
-sudo apt install -y curl git ufw htop net-tools wireguard dnsutils
+sudo apt install -y curl git ufw htop net-tools dnsutils
 log "System packages installed"
 
 # ─── Step 2: Docker ──────────────────────────────────────────────────
@@ -41,11 +40,10 @@ else
     sudo usermod -aG docker "$USER"
     sudo apt install -y docker-compose-plugin
     sudo systemctl enable docker
-    log "Docker installed. NOTE: Log out and back in for group changes to take effect."
+    log "Docker installed. NOTE: Log out and back in for group changes."
 fi
 
-# docker group takes effect on next login — use sudo for this check
-sudo docker compose version || fail "docker compose plugin not found — install it manually"
+sudo docker compose version || fail "docker compose plugin not found"
 log "Docker Compose v2 confirmed"
 
 # ─── Step 3: Prevent Laptop Sleep ────────────────────────────────────
@@ -64,73 +62,35 @@ log "Laptop will stay awake with lid closed"
 info "Step 4: Configuring UFW firewall..."
 sudo ufw allow OpenSSH
 sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow 51820/udp
 sudo ufw --force enable
 sudo ufw status verbose
 log "Firewall configured"
 
-# ─── Step 5: SSH Hardening ───────────────────────────────────────────
-info "Step 5: Hardening SSH (keys only, no passwords)..."
-sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' \
-    /etc/ssh/sshd_config
-sudo sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' \
-    /etc/ssh/sshd_config
-sudo systemctl restart sshd
-log "SSH password auth disabled"
-
-# ─── Step 6: Security Tools ──────────────────────────────────────────
-info "Step 6: Installing fail2ban and unattended-upgrades..."
-sudo apt install -y fail2ban unattended-upgrades
-sudo systemctl enable --now fail2ban
-sudo dpkg-reconfigure --priority=low unattended-upgrades
-log "fail2ban active, auto security updates enabled"
-
-# ─── Step 7: Docker Socket Permissions ───────────────────────────────
-info "Step 7: Securing Docker socket..."
-sudo chmod 660 /var/run/docker.sock
-sudo chown root:docker /var/run/docker.sock
-log "Docker socket permissions set to 660"
-
-# ─── Step 8: Project Structure ───────────────────────────────────────
-info "Step 8: Creating project directories..."
+# ─── Step 5: Project Structure ───────────────────────────────────────
+info "Step 5: Creating project directories..."
 mkdir -p "$CAKTUS_DIR"/{caddy,apps,scripts,docs}
 log "Project directories ready at $CAKTUS_DIR"
 
-# ─── Step 9: Static IP Reminder ──────────────────────────────────────
-echo ""
-warn "MANUAL STEP REQUIRED: Static LAN IP"
-echo ""
-echo "  Current network interfaces:"
-ip link show | grep -E '^[0-9]' | awk '{print "  -", $2}'
-echo ""
-echo "  Current IPs:"
-ip addr show | grep 'inet ' | awk '{print "  -", $2, "on", $NF}'
-echo ""
-echo "  To set static IP, edit /etc/netplan/01-netcfg.yaml:"
-cat << 'NETPLAN'
-  network:
-    version: 2
-    renderer: networkd
-    ethernets:
-      enp3s0:                         # ← your interface name
-        dhcp4: no
-        addresses: [192.168.1.100/24] # ← your chosen static IP
-        gateway4: 192.168.1.1         # ← your router gateway
-        nameservers:
-          addresses: [1.1.1.1, 8.8.8.8]
-NETPLAN
-echo ""
-echo "  Then run: sudo netplan apply"
-echo ""
+# ─── Step 6: .env Setup ─────────────────────────────────────────────
+info "Step 6: Checking .env..."
+if [ -f "$CAKTUS_DIR/.env" ]; then
+    warn ".env already exists — skipping"
+else
+    if [ -f "$CAKTUS_DIR/.env.example" ]; then
+        cp "$CAKTUS_DIR/.env.example" "$CAKTUS_DIR/.env"
+        log "Created .env from .env.example — fill in your ngrok credentials"
+    else
+        warn ".env.example not found — create .env manually"
+    fi
+fi
 
 echo ""
 echo "════════════════════════════════════════"
 log "Laptop setup complete!"
 echo ""
 echo "  Next steps:"
-echo "  1. Set static IP via netplan (see above)"
-echo "  2. Run: bash scripts/setup-wg.sh  (WireGuard keys)"
-echo "  3. Follow Phase 1-3 in the runbook (VPS + DuckDNS)"
-echo "  4. Run: docker compose up -d"
+echo "  1. Sign up at ngrok.com (free)"
+echo "  2. Fill in .env with your NGROK_AUTHTOKEN and NGROK_DOMAIN"
+echo "  3. Run: docker compose up -d"
+echo "  4. Open http://localhost to see your landing page"
 echo ""
