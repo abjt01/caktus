@@ -24,7 +24,9 @@ from pydantic import BaseModel, field_validator
 NGINX_APPS_DIR = Path(os.getenv("NGINX_APPS_DIR", "/nginx-apps"))
 DATA_DIR = Path(os.getenv("DATA_DIR", "/data"))
 APPS_FILE = DATA_DIR / "apps.json"
-DOCKER_NETWORK = "caktus-net"
+
+DOCKER_NETWORK = os.getenv("DOCKER_NETWORK", "caktus_caktus-net")
+
 CONTAINER_PREFIX = "caktus-app-"
 NGINX_CONTAINER = "caktus-nginx"
 NGROK_DOMAIN = os.getenv("NGROK_DOMAIN", "")
