@@ -285,7 +285,7 @@
         <span class="badge blue">Self-Hosted</span>
         <span class="badge">Docker</span>
         <span class="badge">ngrok</span>
-        <span class="badge">Caddy</span>
+        <span class="badge">nginx</span>
         <span class="badge">$0/month</span>
       </div>
     </section>
@@ -354,9 +354,9 @@
  ┌──────────────────────────────────────────────────┐
  │  LAPTOP (your machine)                           │
  │                                                   │
- │  caktus-ngrok  ──▶  caktus-caddy :80             │
+ │  caktus-ngrok  ──▶  caktus-nginx :80             │
  │                                                   │
- │  Caddy routes by Host header:                    │
+ │  nginx routes by Host header:                    │
  │    ──▶  caktus-landing:80    (landing page)      │
  │    ──▶  caktus-hello:80      (smoke test)        │
  │    ──▶  caktus-portainer:9000 (Docker UI)        │
@@ -379,8 +379,8 @@
           <div class="stack-role">Secure tunnel. Bypasses CG-NAT. Free HTTPS endpoint.</div>
         </div>
         <div class="stack-item">
-          <div class="stack-tech">Caddy v2</div>
-          <div class="stack-role">Reverse proxy. Routes by Host header. Zero config.</div>
+          <div class="stack-tech">nginx</div>
+          <div class="stack-role">Reverse proxy. Routes by Host header. Battle-tested.</div>
         </div>
         <div class="stack-item">
           <div class="stack-tech">Docker + Compose</div>
@@ -423,14 +423,14 @@
         <div class="flow-step">
           <span class="step-num">3</span>
           <div class="step-content">
-            <div class="step-title">Tunnel delivers to Caddy</div>
-            <div class="step-detail">caktus-ngrok container → caktus-caddy:80 (internal Docker network)</div>
+            <div class="step-title">Tunnel delivers to nginx</div>
+            <div class="step-detail">caktus-ngrok container → caktus-nginx:80 (internal Docker network)</div>
           </div>
         </div>
         <div class="flow-step">
           <span class="step-num">4</span>
           <div class="step-content">
-            <div class="step-title">Caddy routes by Host header</div>
+            <div class="step-title">nginx routes by Host header</div>
             <div class="step-detail">Reads Host header → matches @named-matcher → selects target container</div>
           </div>
         </div>
@@ -438,7 +438,7 @@
           <span class="step-num">5</span>
           <div class="step-content">
             <div class="step-title">Container responds</div>
-            <div class="step-detail">Your app processes the request. Response flows back: container → Caddy → ngrok → user</div>
+            <div class="step-detail">Your app processes the request. Response flows back: container → nginx → ngrok → user</div>
           </div>
         </div>
       </div>
@@ -449,7 +449,7 @@
   <footer>
     <p>🌵 Project Caktus &nbsp;·&nbsp; One Laptop. Zero Cost. Fully Mine.</p>
     <p style="margin-top:8px;">
-      Built with ngrok · Caddy · Docker · Uptime Kuma · Portainer
+      Built with ngrok · nginx · Docker · Uptime Kuma · Portainer
     </p>
   </footer>
 
