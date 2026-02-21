@@ -52,8 +52,26 @@
     #     reverse_proxy caktus-myapp:3000
     # }
 
-    # ── Default catch-all → landing page (handles all ngrok public traffic) ──
+    # ── Harbor RPC proxies (public + LAN) ────────────────────────────────────
+    # These path routes work on any host (ngrok domain or harbor.caktus.local)
+    # Browser uses window.location.origin so the correct host is automatic.
+    handle /rpc/fortress* {
+        uri strip_prefix /rpc/fortress
+        reverse_proxy caktus-harbor-fortress:8545
+    }
+    handle /rpc/smallchain* {
+        uri strip_prefix /rpc/smallchain
+        reverse_proxy caktus-harbor-smallchain:8546
+    }
+
+    # ── Harbor (LAN: harbor.caktus.local) ────────────────────────────────────
+    @harbor host harbor.caktus.local
+    handle @harbor {
+        reverse_proxy caktus-harbor-frontend:80
+    }
+
+    # ── Default catch-all → Harbor frontend (public via ngrok) ───────────────
     handle {
-        reverse_proxy caktus-landing:80
+        reverse_proxy caktus-harbor-frontend:80
     }
 }
