@@ -1,9 +1,16 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # LAPTOP Caddyfile — ~/caktus/caddy/Caddyfile
 #
-# LOCAL MODE: Access services via localhost or LAN IP (192.168.1.5)
-# No domain, no tunnel — just plain local routing by Host header.
-# Add entries to /etc/hosts for subdomain routing on LAN.
+# ROUTING DESIGN:
+#   PUBLIC traffic (via ngrok):
+#     Host: <your-ngrok-domain>.ngrok-free.app → landing page (default)
+#     Management tools (portainer, uptime-kuma) are intentionally NOT public.
+#     To expose a user-facing app publicly, add a path-based route under @public.
+#
+#   LOCAL traffic (LAN / /etc/hosts):
+#     Add entries to /etc/hosts for subdomain routing:
+#       127.0.0.1 caktus.local portainer.caktus.local status.caktus.local hello.caktus.local
+#     Then access via http://portainer.caktus.local etc.
 # ─────────────────────────────────────────────────────────────────────────────
 
 {
@@ -12,6 +19,8 @@
 }
 
 :80 {
+
+    # ── Local subdomain routing (LAN / /etc/hosts only) ──────────────────────
 
     @landing host caktus.local
     handle @landing {
@@ -33,7 +42,17 @@
         reverse_proxy caktus-uptime:3001
     }
 
-    # Default — catch-all serves the landing page
+    # ── Public path routing (accessible via ngrok URL) ────────────────────────
+    # Uncomment and adapt to expose a specific app publicly via /path prefix.
+    # Example: https://your-ngrok-domain.ngrok-free.app/myapp → caktus-myapp:3000
+    #
+    # @myapp-public path_regexp ^/myapp(/.*)?$
+    # handle @myapp-public {
+    #     uri strip_prefix /myapp
+    #     reverse_proxy caktus-myapp:3000
+    # }
+
+    # ── Default catch-all → landing page (handles all ngrok public traffic) ──
     handle {
         reverse_proxy caktus-landing:80
     }

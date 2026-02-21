@@ -14,6 +14,13 @@ networks:
       config:
         - subnet: 172.20.0.0/16
 
+# Log rotation applied to every service — prevents disk fill on old laptop
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
 
   # ── ngrok Tunnel ───────────────────────────────────────────────────────────
@@ -29,7 +36,15 @@ services:
       - caktus-net
     restart: unless-stopped
     depends_on:
-      - caddy
+      caddy:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4040/api/tunnels"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *default-logging
 
   # ── Caddy Reverse Proxy ───────────────────────────────────────────────────
   caddy:
@@ -49,17 +64,26 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 5s
+    logging: *default-logging
 
   # ── Portainer CE (Docker management UI) ──────────────────────────────────
   portainer:
     image: portainer/portainer-ce:latest
     container_name: caktus-portainer
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - portainer_data:/data
     networks:
       - caktus-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9000/api/status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging: *default-logging
 
   # ── Uptime Kuma (monitoring + status page) ────────────────────────────────
   uptime-kuma:
@@ -70,6 +94,13 @@ services:
     networks:
       - caktus-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging: *default-logging
 
   # ── Landing Page ──────────────────────────────────────────────────────────
   landing:
@@ -80,6 +111,12 @@ services:
     networks:
       - caktus-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *default-logging
 
   # ── Hello World (smoke test) ──────────────────────────────────────────────
   hello:
@@ -88,6 +125,12 @@ services:
     networks:
       - caktus-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *default-logging
 
   # ── ADD YOUR APPS BELOW THIS LINE ─────────────────────────────────────────
 
