@@ -11,8 +11,8 @@
 # What it does:
 #   1. Stops and removes the container
 #   2. Removes the service block from docker-compose.yml
-#   3. Removes the route from caddy/Caddyfile
-#   4. Reloads Caddy
+#   3. Removes the server block from nginx/nginx.conf
+#   4. Reloads nginx
 #
 # What it does NOT do:
 #   - Delete named Docker volumes (data is kept — remove manually if needed)
@@ -29,7 +29,7 @@ strip_env_file_args ARGS "$@"
 set -- "${ARGS[@]+"${ARGS[@]}"}"
 
 COMPOSE_FILE="$CAKTUS_DIR/docker-compose.yml"
-CADDY_FILE="$CAKTUS_DIR/caddy/Caddyfile"
+NGINX_FILE="$CAKTUS_DIR/nginx/nginx.conf"
 
 # ─── Validate inputs ─────────────────────────────────────────────────
 APP_NAME="$1"
@@ -40,7 +40,7 @@ if [ -z "$APP_NAME" ]; then
 fi
 
 # Protect core services from accidental removal
-PROTECTED="caddy ngrok portainer uptime-kuma landing hello"
+PROTECTED="nginx ngrok portainer uptime-kuma landing hello"
 for svc in $PROTECTED; do
     if [ "$APP_NAME" = "$svc" ]; then
         fail "'$APP_NAME' is a core Caktus service and cannot be removed with this script."
@@ -100,38 +100,38 @@ PYEOF
 
 log "Service removed from docker-compose.yml"
 
-# ─── Step 3: Remove from Caddyfile ───────────────────────────────────
-info "Step 3/3: Removing route from Caddyfile..."
-python3 - "$CADDY_FILE" "$APP_NAME" << 'PYEOF'
+# ─── Step 3: Remove from nginx.conf ──────────────────────────────────
+info "Step 3/3: Removing route from nginx.conf..."
+python3 - "$NGINX_FILE" "$APP_NAME" << 'PYEOF'
 import sys
 import re
 
-caddy_file = sys.argv[1]
+nginx_file = sys.argv[1]
 app_name = sys.argv[2]
 
-with open(caddy_file, 'r') as f:
+with open(nginx_file, 'r') as f:
     content = f.read()
 
-# Remove the named matcher line and its handle block (with optional comment)
-pattern = rf'\n    # ── {re.escape(app_name)} ─+\n    @{re.escape(app_name)} host [^\n]+\n    handle @{re.escape(app_name)} \{{[^}}]*\}}'
+# Remove the nginx server block (with optional comment header)
+pattern = rf'\n    # ── {re.escape(app_name)} [─]+\n    server \{{.*?\n    \}}'
 new_content = re.sub(pattern, '', content, flags=re.DOTALL)
 
 if new_content == content:
     # Fallback: remove without comment header
-    pattern2 = rf'\n    @{re.escape(app_name)} host [^\n]+\n    handle @{re.escape(app_name)} \{{[^}}]*\}}'
+    pattern2 = rf'\n    server \{{\n        listen 80;\n        server_name {re.escape(app_name)}\.caktus\.local;.*?\n    \}}'
     new_content = re.sub(pattern2, '', content, flags=re.DOTALL)
 
-with open(caddy_file, 'w') as f:
+with open(nginx_file, 'w') as f:
     f.write(new_content)
 
-print("  Removed Caddy route")
+print("  Removed nginx server block")
 PYEOF
 
-log "Route removed from Caddyfile"
+log "Route removed from nginx.conf"
 
-# Reload Caddy
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart caddy
-log "Caddy reloaded"
+# Reload nginx
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart nginx
+log "nginx reloaded"
 
 # ─── Done ────────────────────────────────────────────────────────────
 echo ""

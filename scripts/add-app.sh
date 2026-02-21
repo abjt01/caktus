@@ -20,7 +20,7 @@ strip_env_file_args ARGS "$@"
 set -- "${ARGS[@]+"${ARGS[@]}"}"
 
 COMPOSE_FILE="$CAKTUS_DIR/docker-compose.yml"
-CADDY_FILE="$CAKTUS_DIR/caddy/Caddyfile"
+NGINX_FILE="$CAKTUS_DIR/nginx/nginx.conf"
 
 # ─── Validate inputs ─────────────────────────────────────────────────
 APP_NAME="$1"
@@ -93,40 +93,41 @@ PYEOF
 
 log "Service added to docker-compose.yml"
 
-# ─── Step 2: Add routing to Caddyfile ────────────────────────────────
-info "Step 2/3: Adding route to Caddyfile..."
+# ─── Step 2: Add routing to nginx.conf ───────────────────────────────
+info "Step 2/3: Adding route to nginx.conf..."
 
-CADDY_ENTRY="
+NGINX_ENTRY="
     # ── ${APP_NAME} ───────────────────────────────────────────────────────────
-    @${APP_NAME} host ${APP_NAME}.caktus.local
-    handle @${APP_NAME} {
-        reverse_proxy caktus-${APP_NAME}:${APP_PORT}
+    server {
+        listen 80;
+        server_name ${APP_NAME}.caktus.local;
+        location / { proxy_pass http://caktus-${APP_NAME}:${APP_PORT}; }
     }"
 
-# Insert before the default "handle {" block
-python3 - "$CADDY_FILE" "$CADDY_ENTRY" << 'PYEOF'
+# Insert before the ADD NEW APP ROUTES marker
+python3 - "$NGINX_FILE" "$NGINX_ENTRY" << 'PYEOF'
 import sys
 
-caddy_file = sys.argv[1]
+nginx_file = sys.argv[1]
 new_route = sys.argv[2]
 
-with open(caddy_file, 'r') as f:
+with open(nginx_file, 'r') as f:
     content = f.read()
 
-# Insert before the catch-all 'handle {' block
-insert_before = '\n    handle {'
+# Insert before the marker line
+insert_before = '\n    # ── ADD NEW APP ROUTES ABOVE THIS LINE'
 if insert_before in content:
     content = content.replace(insert_before, new_route + '\n' + insert_before, 1)
 else:
     content += new_route
 
-with open(caddy_file, 'w') as f:
+with open(nginx_file, 'w') as f:
     f.write(content)
 
-print("  Inserted Caddy route")
+print("  Inserted nginx server block")
 PYEOF
 
-log "Route added to Caddyfile"
+log "Route added to nginx.conf"
 
 # ─── Step 3: Apply ───────────────────────────────────────────────────
 info "Step 3/3: Applying changes..."
@@ -134,9 +135,9 @@ info "Step 3/3: Applying changes..."
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d "$APP_NAME"
 sleep 2
 
-# Restart Caddy to pick up new config (admin API is off)
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart caddy
-log "Caddy restarted with new routes"
+# Restart nginx to pick up new config
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart nginx
+log "nginx restarted with new routes"
 
 # ─── Done ────────────────────────────────────────────────────────────
 echo ""
