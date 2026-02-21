@@ -94,7 +94,7 @@ fi
 
 # ─── Step 9: Project Structure ───────────────────────────────────────
 info "Step 9: Creating project directories..."
-mkdir -p "$CAKTUS_DIR"/{caddy,apps,scripts,docs,logs,backups}
+mkdir -p "$CAKTUS_DIR"/{nginx,apps,scripts,docs,logs,backups}
 log "Project directories ready at $CAKTUS_DIR"
 
 # ─── Step 10: .env Setup ─────────────────────────────────────────────
