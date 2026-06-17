@@ -100,3 +100,6 @@ caktus/
 │   └── backup.sh
 └── docs/                     # Operational notes & runbook
 ```
+
+## License
+This project is licensed under the MIT License.
